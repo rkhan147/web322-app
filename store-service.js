@@ -8,15 +8,19 @@ const initialize = () => {
     return new Promise((resolve, reject) => {
         fs.readFile(path.join(__dirname, 'data/items.json'), 'utf8', (err, data) => {
             if (err) {
+                console.error("Error reading items.json:", err);
                 reject("unable to read file");
             } else {
                 items = JSON.parse(data);
+                console.log("items.json read successfully");
 
                 fs.readFile(path.join(__dirname, 'data/categories.json'), 'utf8', (err, data) => {
                     if (err) {
+                        console.error("Error reading categories.json:", err);
                         reject("unable to read file");
                     } else {
                         categories = JSON.parse(data);
+                        console.log("categories.json read successfully");
                         resolve();
                     }
                 });
