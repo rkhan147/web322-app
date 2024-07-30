@@ -12,7 +12,7 @@ const initialize = () => {
             } else {
                 items = JSON.parse(data);
 
-                fs.readFile(path.join(__dirname, '../data/categories.json'), 'utf8', (err, data) => {
+                fs.readFile(path.join(__dirname, 'data/categories.json'), 'utf8', (err, data) => {
                     if (err) {
                         reject("unable to read file");
                     } else {
