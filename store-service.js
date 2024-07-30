@@ -1,63 +1,44 @@
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
 
 let items = [];
 let categories = [];
 
-const initialize = () => {
-    return new Promise((resolve, reject) => {
-        fs.readFile(path.join(__dirname, 'data/items.json'), 'utf8', (err, data) => {
-            if (err) {
-                console.error("Error reading items.json:", err);
-                reject("unable to read file");
-            } else {
-                items = JSON.parse(data);
-                console.log("items.json read successfully");
+const initialize = async () => {
+    try {
+        const itemsData = await fs.readFile(path.join(__dirname, 'data/items.json'), 'utf8');
+        items = JSON.parse(itemsData);
 
-                fs.readFile(path.join(__dirname, 'data/categories.json'), 'utf8', (err, data) => {
-                    if (err) {
-                        console.error("Error reading categories.json:", err);
-                        reject("unable to read file");
-                    } else {
-                        categories = JSON.parse(data);
-                        console.log("categories.json read successfully");
-                        resolve();
-                    }
-                });
-            }
-        });
-    });
+        const categoriesData = await fs.readFile(path.join(__dirname, 'data/categories.json'), 'utf8');
+        categories = JSON.parse(categoriesData);
+    } catch (err) {
+        throw new Error("unable to read file");
+    }
 };
 
-const getAllItems = () => {
-    return new Promise((resolve, reject) => {
-        if (items.length > 0) {
-            resolve(items);
-        } else {
-            reject("no results returned");
-        }
-    });
+const getAllItems = async () => {
+    if (items.length > 0) {
+        return items;
+    } else {
+        throw new Error("no results returned");
+    }
 };
 
-const getPublishedItems = () => {
-    return new Promise((resolve, reject) => {
-        const publishedItems = items.filter(item => item.published);
-        if (publishedItems.length > 0) {
-            resolve(publishedItems);
-        } else {
-            reject("no results returned");
-        }
-    });
+const getPublishedItems = async () => {
+    const publishedItems = items.filter(item => item.published);
+    if (publishedItems.length > 0) {
+        return publishedItems;
+    } else {
+        throw new Error("no results returned");
+    }
 };
 
-const getCategories = () => {
-    return new Promise((resolve, reject) => {
-        if (categories.length > 0) {
-            resolve(categories);
-        } else {
-            reject("no results returned");
-        }
-    });
+const getCategories = async () => {
+    if (categories.length > 0) {
+        return categories;
+    } else {
+        throw new Error("no results returned");
+    }
 };
 
 module.exports = {
