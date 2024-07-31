@@ -18,7 +18,7 @@ cloudinary.config({
 });
 
 // Middleware
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -42,6 +42,7 @@ app.engine('.hbs', exphbs.engine({
         }
     }
 }));
+app.set('views', path.join(__dirname, 'views')); // Set the views directory
 app.set('view engine', '.hbs');
 
 // Middleware to set active route
@@ -94,8 +95,10 @@ app.get('/items', async (req, res) => {
 app.get('/categories', async (req, res) => {
     try {
         const categories = await storeService.getCategories();
+        console.log("Categories fetched:", categories);
         res.render('categories', { categories: categories });
     } catch (err) {
+        console.error("Error fetching categories:", err);
         res.render('categories', { message: "no results" });
     }
 });
