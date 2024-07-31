@@ -1,3 +1,4 @@
+const pg = require('pg');
 const Sequelize = require('sequelize');
 var sequelize = new Sequelize('neondb', 'neondb_owner', 'XtM94YjSzFxU', {
     host: 'ep-withered-band-a56z79ty.us-east-2.aws.neon.tech',
