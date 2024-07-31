@@ -10,9 +10,9 @@ const PORT = process.env.PORT || 8080;
 
 // Cloudinary configuration
 cloudinary.config({
-    cloud_name: 'dnwi13efa',
-    api_key: '634193897627138',
-    api_secret: 'JzeTSk_2eP9wnnEg4qhIAP3FI90',
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
     secure: true
 });
 
@@ -32,10 +32,13 @@ app.get('/about', (req, res) => {
     res.sendFile(path.join(__dirname, 'views/about.html'));
 });
 
-app.get('/shop', (req, res) => {
-    storeService.getPublishedItems()
-        .then(data => res.json(data))
-        .catch(err => res.status(404).json({ message: err.message }));
+app.get('/shop', async (req, res) => {
+    try {
+        const data = await storeService.getPublishedItems();
+        res.json(data);
+    } catch (err) {
+        res.status(404).json({ message: err.message });
+    }
 });
 
 app.get('/items', async (req, res) => {
@@ -54,10 +57,13 @@ app.get('/items', async (req, res) => {
     }
 });
 
-app.get('/categories', (req, res) => {
-    storeService.getCategories()
-        .then(data => res.json(data))
-        .catch(err => res.status(404).json({ message: err.message }));
+app.get('/categories', async (req, res) => {
+    try {
+        const data = await storeService.getCategories();
+        res.json(data);
+    } catch (err) {
+        res.status(404).json({ message: err.message });
+    }
 });
 
 app.get('/items/add', (req, res) => {
@@ -71,7 +77,7 @@ app.post('/items/add', upload.single('featureImage'), async (req, res) => {
         if (req.file) {
             const streamUpload = (req) => {
                 return new Promise((resolve, reject) => {
-                    let stream = cloudinary.uploader.upload_stream((error, result) => {
+                    const stream = cloudinary.uploader.upload_stream((error, result) => {
                         if (result) {
                             resolve(result);
                         } else {
@@ -83,7 +89,7 @@ app.post('/items/add', upload.single('featureImage'), async (req, res) => {
             };
 
             const upload = async (req) => {
-                let result = await streamUpload(req);
+                const result = await streamUpload(req);
                 return result;
             };
 
