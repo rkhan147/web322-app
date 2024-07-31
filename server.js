@@ -4,15 +4,16 @@ const storeService = require('./store-service');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const streamifier = require('streamifier');
+const exphbs = require('express-handlebars');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
 // Cloudinary configuration
 cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
+    cloud_name: 'dnwi13efa',
+    api_key: '634193897627138',
+    api_secret: 'JzeTSk_2eP9wnnEg4qhIAP3FI90',
     secure: true
 });
 
@@ -23,21 +24,54 @@ app.use(express.urlencoded({ extended: true }));
 
 const upload = multer(); // no disk storage
 
+// Handlebars setup
+app.engine('.hbs', exphbs.engine({
+    extname: '.hbs',
+    helpers: {
+        navLink: function(url, options) {
+            return '<li' + ((url == app.locals.activeRoute) ? ' class="active" ' : '') + '><a href="' + url + '">' + options.fn(this) + '</a></li>';
+        },
+        equal: function(lvalue, rvalue, options) {
+            if (arguments.length < 3)
+                throw new Error("Handlebars Helper equal needs 2 parameters");
+            if (lvalue != rvalue) {
+                return options.inverse(this);
+            } else {
+                return options.fn(this);
+            }
+        }
+    }
+}));
+app.set('view engine', '.hbs');
+
+// Middleware to set active route
+app.use(function(req, res, next) {
+    let route = req.path.substring(1);
+    app.locals.activeRoute = "/" + (isNaN(route.split('/')[1]) ? route.replace(/\/(?!.*)/, "") : route.replace(/\/(.*)/, ""));
+    app.locals.viewingCategory = req.query.category;
+    next();
+});
+
 // Routes
 app.get('/', (req, res) => {
-    res.redirect('/about');
+    res.redirect('/shop');
 });
 
 app.get('/about', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views/about.html'));
+    res.render('about');
 });
 
 app.get('/shop', async (req, res) => {
     try {
-        const data = await storeService.getPublishedItems();
-        res.json(data);
+        const items = await storeService.getPublishedItems();
+        const categories = await storeService.getCategories();
+        res.render('shop', {
+            items: items,
+            categories: categories,
+            item: items[0]
+        });
     } catch (err) {
-        res.status(404).json({ message: err.message });
+        res.render('shop', { message: "no results" });
     }
 });
 
@@ -51,23 +85,23 @@ app.get('/items', async (req, res) => {
         } else {
             items = await storeService.getAllItems();
         }
-        res.json(items);
+        res.render('items', { items: items });
     } catch (err) {
-        res.status(404).json({ message: err.message });
+        res.render('items', { message: "no results" });
     }
 });
 
 app.get('/categories', async (req, res) => {
     try {
-        const data = await storeService.getCategories();
-        res.json(data);
+        const categories = await storeService.getCategories();
+        res.render('categories', { categories: categories });
     } catch (err) {
-        res.status(404).json({ message: err.message });
+        res.render('categories', { message: "no results" });
     }
 });
 
 app.get('/items/add', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views/addItem.html'));
+    res.render('addItem');
 });
 
 app.post('/items/add', upload.single('featureImage'), async (req, res) => {
@@ -77,7 +111,7 @@ app.post('/items/add', upload.single('featureImage'), async (req, res) => {
         if (req.file) {
             const streamUpload = (req) => {
                 return new Promise((resolve, reject) => {
-                    const stream = cloudinary.uploader.upload_stream((error, result) => {
+                    let stream = cloudinary.uploader.upload_stream((error, result) => {
                         if (result) {
                             resolve(result);
                         } else {
@@ -89,7 +123,7 @@ app.post('/items/add', upload.single('featureImage'), async (req, res) => {
             };
 
             const upload = async (req) => {
-                const result = await streamUpload(req);
+                let result = await streamUpload(req);
                 return result;
             };
 
@@ -98,6 +132,7 @@ app.post('/items/add', upload.single('featureImage'), async (req, res) => {
         }
 
         req.body.featureImage = imageUrl;
+        req.body.itemDate = new Date().toISOString().split('T')[0]; // Set itemDate
         await storeService.addItem(req.body);
         res.redirect('/items');
     } catch (err) {
@@ -115,7 +150,7 @@ app.get('/item/:id', async (req, res) => {
 });
 
 app.use((req, res) => {
-    res.status(404).send('Page Not Found');
+    res.status(404).render('404');
 });
 
 // Initialize and start the server

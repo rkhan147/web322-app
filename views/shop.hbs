@@ -1,0 +1,39 @@
+<div class="row">
+    <div class="col-md-12">
+        <h2>{{item.title}}</h2>
+        <hr />
+        <img src="{{item.featureImage}}" alt="{{item.title}}" class="img-fluid">
+        <br /><br />
+        {{{item.body}}}
+        <br /><br />
+        <p><strong>Category:</strong> {{item.category}}</p>
+        <p><strong>Price:</strong> {{item.price}}</p>
+        <p><strong>Last Updated:</strong> {{item.itemDate}}</p>
+    </div>
+    <div class="col-md-4">
+        {{#if items}}
+            <h4>Items</h4>
+            <ul>
+                {{#each items}}
+                    <li><a href="/shop/{{this.id}}?category={{../viewingCategory}}">{{this.title}}</a></li>
+                {{/each}}
+            </ul>
+        {{/if}}
+    </div>
+    <div class="col-md-4">
+        {{#if categories}}
+            <h4>Categories</h4>
+            <ul>
+                {{#each categories}}
+                    <li><a href="/shop?category={{this.id}}">{{this.category}}</a></li>
+                {{/each}}
+            </ul>
+        {{/if}}
+    </div>
+</div>
+{{#if message}}
+    <div class="col-md-12 text-center">
+        <h2>{{message}}</h2>
+        <p>Please try another Item / Category</p>
+    </div>
+{{/if}}

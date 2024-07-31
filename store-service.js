@@ -6,13 +6,18 @@ let categories = [];
 
 const initialize = async () => {
     try {
+        const itemsPath = path.join(__dirname, 'data/items.json');
+        const categoriesPath = path.join(__dirname, 'data/categories.json');
+                
         const [itemsData, categoriesData] = await Promise.all([
-            fs.readFile(path.join(__dirname, 'data/items.json'), 'utf8'),
-            fs.readFile(path.join(__dirname, 'data/categories.json'), 'utf8')
+            fs.readFile(itemsPath, 'utf8'),
+            fs.readFile(categoriesPath, 'utf8')
         ]);
+        
         items = JSON.parse(itemsData);
         categories = JSON.parse(categoriesData);
     } catch (err) {
+        console.error("Unable to read file", err);
         throw new Error("Unable to read file");
     }
 };
@@ -73,8 +78,18 @@ const getItemById = async (id) => {
 const addItem = async (itemData) => {
     itemData.published = itemData.published ?? false;
     itemData.id = items.length + 1;
+    itemData.itemDate = new Date().toISOString().split('T')[0]; // Set itemDate
     items.push(itemData);
     return itemData;
+};
+
+const getPublishedItemsByCategory = async (category) => {
+    const filteredItems = items.filter(item => item.published && item.category === category);
+    if (filteredItems.length > 0) {
+        return filteredItems;
+    } else {
+        throw new Error("No results returned");
+    }
 };
 
 module.exports = {
@@ -85,5 +100,6 @@ module.exports = {
     getItemsByCategory,
     getItemsByMinDate,
     getItemById,
-    addItem
+    addItem,
+    getPublishedItemsByCategory
 };
