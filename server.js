@@ -39,6 +39,12 @@ app.engine('.hbs', exphbs.engine({
             } else {
                 return options.fn(this);
             }
+        },
+        formatDate: function(dateObj) {
+            let year = dateObj.getFullYear();
+            let month = (dateObj.getMonth() + 1).toString();
+            let day = dateObj.getDate().toString();
+            return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
         }
     }
 }));
@@ -95,16 +101,19 @@ app.get('/items', async (req, res) => {
 app.get('/categories', async (req, res) => {
     try {
         const categories = await storeService.getCategories();
-        console.log("Categories fetched:", categories);
         res.render('categories', { categories: categories });
     } catch (err) {
-        console.error("Error fetching categories:", err);
         res.render('categories', { message: "no results" });
     }
 });
 
-app.get('/items/add', (req, res) => {
-    res.render('addItem');
+app.get('/items/add', async (req, res) => {
+    try {
+        const categories = await storeService.getCategories();
+        res.render('addItem', { categories: categories });
+    } catch (err) {
+        res.render('addItem', { categories: [] });
+    }
 });
 
 app.post('/items/add', upload.single('featureImage'), async (req, res) => {
@@ -143,12 +152,34 @@ app.post('/items/add', upload.single('featureImage'), async (req, res) => {
     }
 });
 
-app.get('/item/:id', async (req, res) => {
+app.get('/categories/add', (req, res) => {
+    res.render('addCategory');
+});
+
+app.post('/categories/add', async (req, res) => {
     try {
-        const item = await storeService.getItemById(req.params.id);
-        res.json(item);
+        await storeService.addCategory(req.body);
+        res.redirect('/categories');
     } catch (err) {
-        res.status(404).json({ message: err.message });
+        res.status(500).json({ message: err.message });
+    }
+});
+
+app.get('/categories/delete/:id', async (req, res) => {
+    try {
+        await storeService.deleteCategoryById(req.params.id);
+        res.redirect('/categories');
+    } catch (err) {
+        res.status(500).json({ message: "Unable to Remove Category / Category not found" });
+    }
+});
+
+app.get('/items/delete/:id', async (req, res) => {
+    try {
+        await storeService.deleteItemById(req.params.id);
+        res.redirect('/items');
+    } catch (err) {
+        res.status(500).json({ message: "Unable to Remove Item / Item not found" });
     }
 });
 
