@@ -41,9 +41,53 @@ const getCategories = async () => {
     }
 };
 
+const getItemsByCategory = async (category) => {
+    const filteredItems = items.filter(item => item.category == category);
+    if (filteredItems.length > 0) {
+        return filteredItems;
+    } else {
+        throw new Error("no results returned");
+    }
+};
+
+const getItemsByMinDate = async (minDateStr) => {
+    const filteredItems = items.filter(item => new Date(item.postDate) >= new Date(minDateStr));
+    if (filteredItems.length > 0) {
+        return filteredItems;
+    } else {
+        throw new Error("no results returned");
+    }
+};
+
+const getItemById = async (id) => {
+    const item = items.find(item => item.id == id);
+    if (item) {
+        return item;
+    } else {
+        throw new Error("no result returned");
+    }
+};
+
+const addItem = async (itemData) => {
+    if (itemData.published === undefined) {
+        itemData.published = false;
+    } else {
+        itemData.published = true;
+    }
+
+    itemData.id = items.length + 1;
+    items.push(itemData);
+
+    return itemData;
+};
+
 module.exports = {
     initialize,
     getAllItems,
     getPublishedItems,
-    getCategories
+    getCategories,
+    getItemsByCategory,
+    getItemsByMinDate,
+    getItemById,
+    addItem
 };
