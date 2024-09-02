@@ -11,18 +11,20 @@
 * GitHub Repository URL: https://github.com/rkhan147/web322-app
 *
 ********************************************************************************/
+
+// Importing required modules
 const express = require('express');
 const path = require('path');
-const storeService = require('./store-service');
-const multer = require('multer');
-const cloudinary = require('cloudinary').v2;
-const streamifier = require('streamifier');
-const exphbs = require('express-handlebars');
+const storeService = require('./store-service'); // Custom service for database interactions
+const multer = require('multer'); // Middleware for handling file uploads
+const cloudinary = require('cloudinary').v2; // Cloudinary SDK for image hosting
+const streamifier = require('streamifier'); // Helper for converting buffers to streams
+const exphbs = require('express-handlebars'); // Handlebars templating engine
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8080; // Port for the application
 
-// Cloudinary configuration
+// Cloudinary configuration for image upload
 cloudinary.config({
     cloud_name: 'dnwi13efa',
     api_key: '634193897627138',
@@ -30,20 +32,22 @@ cloudinary.config({
     secure: true
 });
 
-// Middleware
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Middleware setup
+app.use(express.static(path.join(__dirname, 'public'))); // Serve static files from 'public' directory
+app.use(express.json()); // Parse JSON data in request bodies
+app.use(express.urlencoded({ extended: true })); // Parse URL-encoded data
 
-const upload = multer(); // no disk storage
+const upload = multer(); // Configure multer for file upload without disk storage
 
-// Handlebars setup
+// Handlebars setup for templating
 app.engine('.hbs', exphbs.engine({
-    extname: '.hbs',
+    extname: '.hbs', // Set file extension for templates
     helpers: {
+        // Helper for creating navigation links
         navLink: function(url, options) {
             return '<li' + ((url == app.locals.activeRoute) ? ' class="active" ' : '') + '><a href="' + url + '">' + options.fn(this) + '</a></li>';
         },
+        // Helper for comparing two values
         equal: function(lvalue, rvalue, options) {
             if (arguments.length < 3)
                 throw new Error("Handlebars Helper equal needs 2 parameters");
@@ -53,6 +57,7 @@ app.engine('.hbs', exphbs.engine({
                 return options.fn(this);
             }
         },
+        // Helper for formatting dates
         formatDate: function(dateObj) {
             let year = dateObj.getFullYear();
             let month = (dateObj.getMonth() + 1).toString();
@@ -61,10 +66,10 @@ app.engine('.hbs', exphbs.engine({
         }
     }
 }));
-app.set('views', path.join(__dirname, 'views')); // Set the views directory
-app.set('view engine', '.hbs');
+app.set('views', path.join(__dirname, 'views')); // Set directory for views
+app.set('view engine', '.hbs'); // Set Handlebars as the templating engine
 
-// Middleware to set active route
+// Middleware to determine and set the active route
 app.use(function(req, res, next) {
     let route = req.path.substring(1);
     app.locals.activeRoute = "/" + (isNaN(route.split('/')[1]) ? route.replace(/\/(?!.*)/, "") : route.replace(/\/(.*)/, ""));
@@ -72,32 +77,33 @@ app.use(function(req, res, next) {
     next();
 });
 
-// Routes
+// Route handlers
 app.get('/', (req, res) => {
-    res.redirect('/shop');
+    res.redirect('/shop'); // Redirect root to the shop page
 });
 
 app.get('/about', (req, res) => {
-    res.render('about');
+    res.render('about'); // Render the 'about' page
 });
 
 app.get('/shop', async (req, res) => {
     try {
-        const items = await storeService.getPublishedItems();
-        const categories = await storeService.getCategories();
+        const items = await storeService.getPublishedItems(); // Get published items from store service
+        const categories = await storeService.getCategories(); // Get categories from store service
         res.render('shop', {
             items: items,
             categories: categories,
-            item: items[0]
+            item: items[0] // Default item to display
         });
     } catch (err) {
-        res.render('shop', { message: "no results" });
+        res.render('shop', { message: "no results" }); // Handle errors and render with a message
     }
 });
 
 app.get('/items', async (req, res) => {
     try {
         let items;
+        // Filter items based on query parameters
         if (req.query.category) {
             items = await storeService.getItemsByCategory(req.query.category);
         } else if (req.query.minDate) {
@@ -113,7 +119,7 @@ app.get('/items', async (req, res) => {
 
 app.get('/categories', async (req, res) => {
     try {
-        const categories = await storeService.getCategories();
+        const categories = await storeService.getCategories(); // Get categories from store service
         res.render('categories', { categories: categories });
     } catch (err) {
         res.render('categories', { message: "no results" });
@@ -122,7 +128,7 @@ app.get('/categories', async (req, res) => {
 
 app.get('/items/add', async (req, res) => {
     try {
-        const categories = await storeService.getCategories();
+        const categories = await storeService.getCategories(); // Get categories for the 'add item' form
         res.render('addItem', { categories: categories });
     } catch (err) {
         res.render('addItem', { categories: [] });
@@ -134,6 +140,7 @@ app.post('/items/add', upload.single('featureImage'), async (req, res) => {
         let imageUrl = '';
 
         if (req.file) {
+            // Function to handle image upload to Cloudinary
             const streamUpload = (req) => {
                 return new Promise((resolve, reject) => {
                     let stream = cloudinary.uploader.upload_stream((error, result) => {
@@ -153,49 +160,50 @@ app.post('/items/add', upload.single('featureImage'), async (req, res) => {
             };
 
             const uploaded = await upload(req);
-            imageUrl = uploaded.url;
+            imageUrl = uploaded.url; // Set image URL
         }
 
         req.body.featureImage = imageUrl;
-        req.body.itemDate = new Date().toISOString().split('T')[0]; // Set itemDate
-        await storeService.addItem(req.body);
+        req.body.itemDate = new Date().toISOString().split('T')[0]; // Set itemDate to current date
+        await storeService.addItem(req.body); // Add new item to store
         res.redirect('/items');
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        res.status(500).json({ message: err.message }); // Handle errors during item addition
     }
 });
 
 app.get('/categories/add', (req, res) => {
-    res.render('addCategory');
+    res.render('addCategory'); // Render the 'add category' page
 });
 
 app.post('/categories/add', async (req, res) => {
     try {
-        await storeService.addCategory(req.body);
+        await storeService.addCategory(req.body); // Add new category
         res.redirect('/categories');
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        res.status(500).json({ message: err.message }); // Handle errors during category addition
     }
 });
 
 app.get('/categories/delete/:id', async (req, res) => {
     try {
-        await storeService.deleteCategoryById(req.params.id);
+        await storeService.deleteCategoryById(req.params.id); // Delete category by ID
         res.redirect('/categories');
     } catch (err) {
-        res.status(500).json({ message: "Unable to Remove Category / Category not found" });
+        res.status(500).json({ message: "Unable to Remove Category / Category not found" }); // Handle errors during category deletion
     }
 });
 
 app.get('/items/delete/:id', async (req, res) => {
     try {
-        await storeService.deleteItemById(req.params.id);
+        await storeService.deleteItemById(req.params.id); // Delete item by ID
         res.redirect('/items');
     } catch (err) {
-        res.status(500).json({ message: "Unable to Remove Item / Item not found" });
+        res.status(500).json({ message: "Unable to Remove Item / Item not found" }); // Handle errors during item deletion
     }
 });
 
+// 404 route for undefined paths
 app.use((req, res) => {
     res.status(404).render('404');
 });
